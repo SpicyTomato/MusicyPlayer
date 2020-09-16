@@ -105,10 +105,10 @@ public class PlayService extends Service {
             return false;
         }
 
-        public void setDataResource(Context context ,Uri uri) {
+        public void setDataResource(Context context, Uri uri) {
 
             try {
-                mMediaPlayer.setDataSource(context,uri);
+                mMediaPlayer.setDataSource(context, uri);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -129,15 +129,19 @@ public class PlayService extends Service {
         public void resetRescource() {
             mMediaPlayer.stop();
             mMediaPlayer.reset();
+            mIsLoaded = false;
 
+        }
+
+        public boolean isLoaded() {
+            return mIsLoaded;
         }
 
         public MediaPlayer getMediaPlayer() {
             return mMediaPlayer;
         }
+
     }
-
-
 
 
 }

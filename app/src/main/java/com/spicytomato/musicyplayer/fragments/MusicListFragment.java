@@ -6,17 +6,21 @@ import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -50,9 +54,31 @@ public class MusicListFragment extends Fragment {
         return view;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+
+        Toolbar toolbar = requireActivity().findViewById(R.id.toolbar3);
+        toolbar.inflateMenu(R.menu.toolbar);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+                    switch (item.getItemId()){
+                        case R.id.backTo_detail:
+                            Intent intent = new Intent(requireActivity(), DetailActivity.class);
+                            intent.putExtra("position",0);
+                            intent.putExtra("content","0");
+                            intent.putExtra("name","0x123");
+                            startActivity(intent);
+                            break;
+                    }
+                    return true;
+                }
+            });
+        }
 
         mRecyclerView = requireActivity().findViewById(R.id.recyclerView);
 

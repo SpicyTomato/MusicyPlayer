@@ -1,26 +1,38 @@
 package com.spicytomato.musicyplayer;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.Range;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.flipboard.bottomsheet.BottomSheetLayout;
+import com.flipboard.bottomsheet.commons.IntentPickerSheetView;
+import com.flipboard.bottomsheet.commons.MenuSheetView;
+import com.spicytomato.musicyplayer.adapters.MusicListAdapter;
 import com.spicytomato.musicyplayer.fragments.MusicListFragment;
 import com.spicytomato.musicyplayer.model.Music;
 import com.spicytomato.musicyplayer.utils.Utils;
@@ -32,6 +44,7 @@ public class DetailActivity extends Activity {
     private static final int SEQUENCE = 0;
     private static final int RANDOM = 1;
     private static final int LOOP = 2;
+    private static final String CLICKS = "clicks";
     private Button mButton_after;
     private Button mButton_before;
     private SeekBar mSeekBar;
@@ -48,6 +61,8 @@ public class DetailActivity extends Activity {
     private int playType = 0;
     private Button mButton_type;
     private int clicks = 0;
+    private SharedPreferences mSharedPreferences;
+    private SharedPreferences.Editor mEditor;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -68,6 +83,12 @@ public class DetailActivity extends Activity {
         mMusicName = intent.getStringExtra("name");
         mPath = Uri.parse(intent.getStringExtra("content"));
         mPosition = intent.getIntExtra("position", 0);
+
+
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplication());
+        mEditor = mSharedPreferences.edit();
+        clicks = mSharedPreferences.getInt(CLICKS,0);
+
 
         mButton_type.setOnClickListener(new View.OnClickListener() {
 
@@ -93,12 +114,29 @@ public class DetailActivity extends Activity {
                         playType = LOOP;
                         break;
                 }
+                mEditor.putInt(CLICKS,clicks);
+                mEditor.apply();
 
             }
         });
 
         registerService();
 
+//        createBottomSheet();
+
+    }
+
+    @SuppressLint("ResourceType")
+    private void createBottomSheet() {
+        BottomSheetLayout bottomSheetLayout = findViewById(R.id.bottomSheet);
+//        bottomSheetLayout.showWithSheetView(LayoutInflater.from(getApplicationContext()).inflate(R.id.bottom_recycler,bottomSheetLayout,false));
+
+        RecyclerView recyclerView = findViewById(R.id.recyclerView_bottom);
+        recyclerView.setLayoutManager(new LinearLayoutManager(DetailActivity.this,RecyclerView.VERTICAL,false));
+        MusicListAdapter musicListFragment = new MusicListAdapter();
+        recyclerView.setAdapter(musicListFragment);
+
+//        bottomSheetLayout.expandSheet();
     }
 
     private void registerService() {
@@ -118,20 +156,27 @@ public class DetailActivity extends Activity {
         private Handler mHandler;
         private boolean mFirsttime;
         private int musicListSize = MusicListFragment.mMusicList.size();
+        private int clicks = 0;
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d("TAG", "onServiceConnected: ");
 
-            mFirsttime = true;
-            mTextView.setText(mMusicName);
-
             mMyBinder = (PlayService.MyBinder) service;
 
+            if (mMusicName.equals("0x123")) {
+                mFirsttime = true;
+                mTextView.setText(mSharedPreferences.getString("musicName","0"));
+                mPosition = mSharedPreferences.getInt("position",0);
 
-            mMyBinder.resetRescource();
-            mMyBinder.setDataResource(getApplicationContext(), mPath);
+            }else {
+                mFirsttime = true;
+                mTextView.setText(mMusicName);
 
+
+                mMyBinder.resetRescource();
+                mMyBinder.setDataResource(getApplicationContext(), mPath);
+            }
 
             mHandler = new Handler(new Handler.Callback() {
 
@@ -288,9 +333,13 @@ public class DetailActivity extends Activity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!mMusicName.equals("0x123")) {
+            mEditor.putString("musicName", mMusicName);
+            mEditor.putInt("position",mPosition);
+            mEditor.apply();
+        }
         unbindService(mMyServiceConnection);
     }
-
 }
